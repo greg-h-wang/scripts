@@ -1,14 +1,26 @@
 #! /bin/bash
 
+if [ ! -d /app_logs/${AppID}]; 
+then
+	mkdir /app_logs/${AppID}
+fi
+
+HOSTNAME=`hostname`
+IP=`ifconfig -a|grep inet|grep -v 127.0.0.1|grep -v 172 |grep -v inet6|awk '{print $2}'|tr -d "addr:"`
+echo ${IP} ${HOSTNAME} >> /etc/hosts
+
 for VAR in `env`
 do
-  if [[ $VAR =~ ^KAFKA_ && ! $VAR =~ ^KAFKA_HOME ]]; then
+  if [[ $VAR =~ ^KAFKA_ && ! $VAR =~ ^KAFKA_HOME ]]; 
+  then
     kafka_name=`echo "$VAR" | sed -r "s/KAFKA_(.*)=.*/\1/g" | tr '[:upper:]' '[:lower:]' | tr _ .`
     env_var=`echo "$VAR" | sed -r "s/(.*)=.*/\1/g"`
-    if egrep -q "(^|^#)$kafka_name=" $KAFKA_HOME/config/server.properties; then
-        sed -r -i "s@(^|^#)($kafka_name)=(.*)@\2=${!env_var}@g" $KAFKA_HOME/config/server.properties
+	env_var_value=`echo "$VAR" | awk -F '=' '{print $NF}'`
+    if egrep -q "(^|^#)$kafka_name=" $KAFKA_HOME/config/server.properties;
+    then
+        sed -r -i "s@(^|^#)($kafka_name)=(.*)@\2=${env_var_value}@g" $KAFKA_HOME/config/server.properties 
     else
-        echo "$kafka_name=${!env_var}" >> $KAFKA_HOME/config/server.properties
+	echo $kafka_name=${env_var_value} >> $KAFKA_HOME/config/server.properties
     fi
   fi
 done
