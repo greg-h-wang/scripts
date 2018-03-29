@@ -1,0 +1,21 @@
+#!/usr/bin/expect
+ 
+set ipa IPA账号
+set timeout 10
+set totp [exec oathtool --base32 --totp "R2ZSEM4VMWGUJ2HL"]
+set server [lindex $argv 0]
+spawn ssh -o PreferredAuthentications=password 堡垒机IP -l $ipa
+expect {
+    "*assword:*" {send -- "IPA密码 $totp\r";}
+    "Clone last session (y/n)*" {send -- "n\r";}   
+}
+expect {
+    "Select server:" {send "$server\r";}
+}
+expect {
+    "*account:*" {send "2\r"; }
+}
+expect {
+    "*$*" {send "sudo su -\r"; }
+}
+interact
