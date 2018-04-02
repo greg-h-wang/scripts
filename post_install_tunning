@@ -1,0 +1,14 @@
+#set $hostname = $getVar('$hostname', None)
+
+# use local repo only
+rm -f /etc/yum.repos.d/CentOS*
+
+# install salt
+yum install -y  salt-minion
+sed -i "17 a master:" /etc/salt/minion
+sed -i "18 a\\\ \ - salt-master-3.sl.com" /etc/salt/minion
+systemctl enable salt-minion
+
+# disable pxe nic after reboot
+sed -i 's/ONBOOT\=yes/ONBOOT\=no/g' /etc/sysconfig/network-scripts/ifcfg-em3
+
