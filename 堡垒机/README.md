@@ -13,34 +13,10 @@ centos : sudo yum install oathtool
 oathtool --base32 --totp "AAAABBBBCCCCDDDD"
 接下来拼接字符串 ipa密码+空格+6位码
 
-#!/usr/bin/expect
- 
-set ipa 
-set timeout 10
-set totp [exec oathtool --base32 --totp "AAAABBBBCCCCDDDD"]
-set server [lindex $argv 0]
-spawn ssh -o PreferredAuthentications=password 10.16.68.100 -l $ipa
-expect {
-    "*assword:*" {send -- "replace-your-password $totp\r";}
-    "Clone last session (y/n)*" {send -- "n\r";}   
-}
-expect {
-    "Select server:" {send "$server\r";}
-}
-expect {
-    "*account:*" {send "2\r"; }
-}
-expect {
-    "*$*" {send "sudo su -\r"; }
-}
-interact
-脚本使用方式
 
-$ chmod +x ./blj-example
-$ ./blj-example app120
-....
-[root@app120 ~]#
-  
-$ ./blj-example 10.16.142.21
-....
-[root@app201 ~]#
+脚本详见目录下的blj脚本
+
+
+脚本使用方式
+$ chmod +x ./blj
+$ ./blj app120
