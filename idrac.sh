@@ -4,10 +4,11 @@ hosts=$@
 if [ -z "$hosts" ] ; then
   echo "Please fill in servers' iDRAC IP"
 else
-	echo "#################################set Uefi bootmode#########################################"
+	echo "#################################set bootmode#########################################"
 	for host in $hosts
 	do
-	        racadm -r $host -u root -p calvin set BIOS.BiosBootSettings.BootMode Uefi
+	        #racadm -r $host -u root -p calvin set BIOS.BiosBootSettings.BootMode Uefi
+	        racadm -r $host -u root -p calvin set BIOS.BiosBootSettings.BootMode BIOS
 	        racadm -r $host -u root -p calvin jobqueue create BIOS.Setup.1-1
 	        racadm -r $host -u root -p calvin serveraction hardreset
 	        sleep 600
