@@ -8,7 +8,7 @@ else
 	for host in $hosts
 	do
 	        #racadm -r $host -u root -p calvin set BIOS.BiosBootSettings.BootMode Uefi
-	        racadm -r $host -u root -p calvin set BIOS.BiosBootSettings.BootMode BIOS
+	        racadm -r $host -u root -p calvin set BIOS.BiosBootSettings.BootMode Bios
 	        racadm -r $host -u root -p calvin jobqueue create BIOS.Setup.1-1
 	        racadm -r $host -u root -p calvin serveraction hardreset
 	        sleep 600
