@@ -1,27 +1,49 @@
-#!/bin/bash
+#! /bin/bash
 
-CheckDomains="example.com abc.com"
-Alert_Email=""
-Alert_Days="10"
+Alert_Email="server@baixing.com"
 Cur_Dir=$(dirname $0)
+Alert_Days="30"
 
-Check()
+baixing_live=(www.baixing.live vip.baixing.live guang-staging.baixing.live)
+baixingeg_com=(www.baixingeg.com)
+
+CleanFiles()
 {
-    Cur_Time=$(date +%s)
-    Expire_Date=$(curl -o /dev/null -m 10 --connect-timeout 10 -svIL https://${Domain} 2>&1|grep "expire date:"|sed 's/*\s\+expire date:\s\+//')
-    Expire_Time=$(date -d "${Expire_Date}" +%s)
-    Alert_Time=$((${Expire_Time}-${Alert_Days}*86400))
-    Expire_Date_Read=$(date -d @${Expire_Time} "+%Y-%m-%d")
-
-    echo "Domain:${Domain} Expire Date: ${Expire_Date_Read}"
-
-    if [ ${Cur_Time} -ge ${Alert_Time} ] &&  [ ${Alert_Email} != "" ] ; then
-        python ${Cur_Dir}/sendmail.py "${Alert_Email}" "Domain: ${Domain} SSL Certificate Expire Notice" "Domain: ${Domain} SSL Certificate will expire on ${Expire_Date_Read}."
+    cd "$(dirname "$0")"; pwd
+    ls * |grep message.txt > /dev/null 2>&1
+    if [ $? = 0 ];then
+	echo "Cleaning old data"
+        rm -f ${Cur_Dir}/message.txt
+        echo "Clean done. Let's do it!"
+    else
+        echo "Let's do it!"
     fi
-
-    sleep 2
 }
 
-for Domain in ${CheckDomains[@]};do
-    Check ${Domain}
+CheckSSL()
+{
+    Current_Timestamp=$(date +%s)
+    Expire_Date=$(timeout 2 bash -c "echo | openssl s_client -servername ${Domain} -connect ${Domain}:443 2>/dev/null | openssl x509 -noout -dates |grep 'After'" | awk -F '=' '{print $2}')
+    Expire_Timestamp=$(date -d "${Expire_Date}" +%s)
+    Alert_Timestamp=$((${Expire_Timestamp}-${Alert_Days}*86400))
+    Days_Remaining_Timestamp=$((${Expire_Timestamp}-${Current_Timestamp}))
+    Days_Remaining_Timestamp_readable=$(eval "echo ${Days_Remaining_Timestamp}/86400 | bc")
+
+    if  [ -n "${Expire_Date}" ] && [ ${Days_Remaining_Timestamp_readable} -ge 0 ] && [ ${Current_Timestamp} -ge ${Alert_Timestamp} ] ; then
+	echo "域名:${Domain},  剩余过期天数:${Days_Remaining_Timestamp_readable} <br/><br/>" >> ${Cur_Dir}/message.txt 2>&1
+    fi
+}
+
+CleanFiles
+for List in {baixing_live,baixingeg_com,baixing_com_cn,baixing_cn,baixing_com,baixing_net} ; do
+    echo "收集 ${List} 部分..."
+    for Domain in $(eval echo \${$List[@]}) ; do
+	CheckSSL
+    done
 done
+
+if  [ ${Alert_Email} != "" ] ; then
+    echo "发送邮件报告中..."
+    sendemail -o tls=yes -f "wanghuan@baixing.com" -t ${Alert_Email} -t wanghuan@baixing.com -s smtp.partner.outlook.cn:587 -xu wanghuan@baixing.com -xp 'password' -u "${Alert_Days}天内证书过期域名清单" -o message-content-type=html -o message-charset=utf8 -m `cat  ${Cur_Dir}/message.txt` >/dev/null 2>&1
+    echo "邮件发送完成"
+fi
